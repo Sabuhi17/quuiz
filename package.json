@@ -1,7 +1,6 @@
 {
-  "name": "quiz-dərs",
+  "name": "quiz-dars",
   "version": "1.0.0",
-  "description": "Kahoot-style quiz game",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
