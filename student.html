@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="az">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>QuizDərs — Tələbə</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;800;900&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0d0d1a;--card:#161628;--border:rgba(255,255,255,0.07);
+  --a:#ff6b6b;--b:#4ecdc4;--c:#45b7d1;--d:#f9ca24;
+  --green:#06d6a0;--purple:#a855f7;--text:#f0f0ff;--muted:#6b6b9a;
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--text);font-family:'Nunito',sans-serif;height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;
+  background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(168,85,247,0.18) 0%,transparent 65%);
+  pointer-events:none;z-index:0;}
+#app{position:relative;z-index:1;height:100%;display:flex;flex-direction:column;}
+
+/* ===== JOIN ===== */
+#join{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  padding:28px 22px;overflow-y:auto;}
+.logo{font-size:2rem;font-weight:900;background:linear-gradient(135deg,#a855f7,#06d6a0);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;text-align:center;margin-bottom:2px;}
+.logo-s{font-family:'Space Mono',monospace;font-size:.7rem;color:var(--muted);text-align:center;margin-bottom:22px;}
+
+.field-label{font-size:.7rem;font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:2px;text-transform:uppercase;margin-bottom:7px;}
+.name-input{width:100%;background:var(--card);border:2px solid rgba(168,85,247,.3);border-radius:14px;
+  padding:14px 18px;color:var(--text);font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:800;
+  outline:none;transition:border-color .2s;margin-bottom:22px;}
+.name-input:focus{border-color:var(--purple);}
+.name-input::placeholder{color:var(--muted);font-weight:400;}
+
+/* Avatar grid */
+.av-section{width:100%;margin-bottom:24px;}
+.av-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;}
+.av-btn{background:var(--card);border:2px solid var(--border);border-radius:14px;
+  padding:10px 4px;font-size:1.8rem;text-align:center;cursor:pointer;transition:all .2s;
+  display:flex;align-items:center;justify-content:center;
+  animation:avIn .3s ease backwards;}
+@keyframes avIn{from{opacity:0;transform:scale(0.5)}to{opacity:1;transform:scale(1)}}
+.av-btn:active{transform:scale(.9);}
+.av-btn.selected{border-color:var(--purple);background:rgba(168,85,247,.2);transform:scale(1.12);
+  box-shadow:0 0 20px rgba(168,85,247,.35);}
+
+/* Wobble + float animations for avatars */
+@keyframes wobble{0%,100%{transform:rotate(0deg)}25%{transform:rotate(-8deg)}75%{transform:rotate(8deg)}}
+@keyframes floatAv{0%,100%{transform:translateY(0)}50%{transform:translateY(-4px)}}
+.av-btn.selected span{display:inline-block;animation:wobble .5s ease,floatAv 2s ease-in-out .5s infinite;}
+
+.btn-join{width:100%;background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff;border:none;
+  border-radius:14px;padding:16px;font-family:'Nunito',sans-serif;font-size:1.1rem;font-weight:900;
+  cursor:pointer;transition:all .15s;box-shadow:0 8px 24px rgba(168,85,247,.35);}
+.btn-join:active{transform:scale(.97);}
+.errmsg{color:var(--a);font-size:.85rem;font-family:'Space Mono',monospace;min-height:20px;margin-top:10px;text-align:center;}
+
+/* ===== WAITING ===== */
+#waiting{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:32px 22px;text-align:center;}
+.wt-avatar{font-size:5rem;margin-bottom:20px;animation:float 2s ease-in-out infinite;}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-14px)}}
+.wt-name{font-size:1.7rem;font-weight:900;margin-bottom:6px;}
+.wt-name b{color:var(--green);}
+.wt-sub{color:var(--muted);font-family:'Space Mono',monospace;font-size:.82rem;}
+.dots span{animation:dot 1.4s infinite;display:inline-block;}
+.dots span:nth-child(2){animation-delay:.25s;}.dots span:nth-child(3){animation-delay:.5s;}
+@keyframes dot{0%,100%{opacity:.2}50%{opacity:1}}
+
+/* ===== QUESTION ===== */
+#qscreen{display:none;flex:1;flex-direction:column;overflow:hidden;}
+.qhead{padding:14px 18px 10px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.qinfo{font-family:'Space Mono',monospace;font-size:.72rem;color:var(--muted);}
+.qtimer{background:var(--card);border-radius:50px;padding:6px 18px;font-family:'Space Mono',monospace;font-weight:700;font-size:1rem;transition:color .3s;}
+.qtimer.warn{color:#f9ca24;animation:tpulse .5s infinite;}
+.qtimer.danger{color:var(--a);animation:tpulse .25s infinite;}
+@keyframes tpulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+
+.qquestion{padding:18px 18px 14px;font-size:clamp(.95rem,4vw,1.15rem);font-weight:800;line-height:1.45;text-align:center;flex-shrink:0;}
+.optlist{flex:1;padding:0 14px 14px;display:flex;flex-direction:column;gap:9px;overflow-y:auto;}
+.obtn{flex:1;min-height:58px;border:none;border-radius:15px;font-family:'Nunito',sans-serif;
+  font-size:clamp(.9rem,3.5vw,1.05rem);font-weight:800;cursor:pointer;display:flex;align-items:center;
+  gap:12px;padding:12px 18px;text-align:left;transition:all .12s;position:relative;overflow:hidden;}
+.obtn::after{content:'';position:absolute;inset:0;background:rgba(255,255,255,0);transition:background .1s;}
+.obtn:active::after{background:rgba(255,255,255,0.15);}
+.obtn[data-i="0"]{background:var(--a);color:#fff;}
+.obtn[data-i="1"]{background:var(--b);color:#000;}
+.obtn[data-i="2"]{background:var(--c);color:#000;}
+.obtn[data-i="3"]{background:var(--d);color:#000;}
+.oltr{width:34px;height:34px;background:rgba(0,0,0,.2);border-radius:8px;display:flex;align-items:center;justify-content:center;
+  font-family:'Space Mono',monospace;font-size:.8rem;font-weight:700;flex-shrink:0;}
+.obtn.sel{box-shadow:0 0 0 3px rgba(255,255,255,.8);transform:scale(.98);}
+.obtn.dis{opacity:.35;cursor:default;}
+.obtn.sel.dis{opacity:1;}
+
+/* ===== ANSWERED ===== */
+#answered{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:30px 22px;text-align:center;}
+.ans-avatar{font-size:4.5rem;margin-bottom:18px;animation:bounce .6s cubic-bezier(.34,1.56,.64,1);}
+@keyframes bounce{from{transform:scale(0)}to{transform:scale(1)}}
+.ans-icon{font-size:3rem;margin-bottom:12px;animation:bounce .4s ease;}
+.ans-title{font-size:1.5rem;font-weight:900;margin-bottom:6px;}
+.ans-sub{color:var(--muted);font-family:'Space Mono',monospace;font-size:.82rem;}
+
+/* ===== RESULTS ===== */
+#results{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:24px 22px;text-align:center;overflow-y:auto;}
+.res-av{font-size:4rem;margin-bottom:12px;}
+.res-icon{font-size:3.5rem;margin-bottom:10px;animation:bounce .4s cubic-bezier(.34,1.56,.64,1);}
+.res-title{font-size:1.8rem;font-weight:900;margin-bottom:4px;}
+.res-title.ok{color:var(--green);}
+.res-title.no{color:var(--a);}
+.res-correct{color:var(--muted);font-size:.82rem;font-family:'Space Mono',monospace;margin-bottom:20px;}
+
+.pts-card{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:18px 36px;margin-bottom:16px;}
+.pts-row{display:flex;justify-content:space-between;align-items:center;gap:24px;margin-bottom:8px;}
+.pts-row:last-child{margin-bottom:0;}
+.pts-label{font-size:.7rem;font-family:'Space Mono',monospace;color:var(--muted);letter-spacing:1px;}
+.pts-val{font-family:'Space Mono',monospace;font-weight:700;font-size:1.1rem;}
+.pts-val.plus{color:var(--green);}
+.pts-val.minus{color:var(--a);}
+.pts-val.total{color:#a855f7;font-size:1.6rem;}
+
+.wait-next{color:var(--muted);font-size:.8rem;font-family:'Space Mono',monospace;}
+
+/* ===== FINAL ===== */
+#final{display:none;flex:1;flex-direction:column;align-items:center;justify-content:center;padding:28px 22px;text-align:center;overflow-y:auto;}
+.fin-av{font-size:5rem;margin-bottom:12px;animation:float 2.5s ease-in-out infinite;}
+.fin-title{font-size:2rem;font-weight:900;margin-bottom:4px;}
+.fin-score{font-family:'Space Mono',monospace;font-size:2.8rem;font-weight:700;
+  background:linear-gradient(135deg,var(--purple),var(--green));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.fin-rank{color:var(--muted);font-family:'Space Mono',monospace;font-size:.85rem;margin-bottom:8px;}
+.fin-badge{background:rgba(168,85,247,.2);border:1px solid rgba(168,85,247,.4);border-radius:50px;
+  padding:10px 28px;font-weight:800;font-size:1.1rem;margin-top:8px;display:inline-block;}
+
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- JOIN -->
+<div id="join">
+  <div class="logo">⚡ QuizDərs</div>
+  <div class="logo-s">// tələbə girişi</div>
+
+  <div style="width:100%;max-width:380px">
+    <div class="field-label">Adınız</div>
+    <input class="name-input" id="nameinp" type="text" placeholder="Adınızı yazın..." maxlength="20" autocomplete="off"/>
+
+    <div class="av-section">
+      <div class="field-label" style="margin-bottom:10px">Obrazınızı seçin</div>
+      <div class="av-grid" id="avgrid"></div>
+    </div>
+
+    <button class="btn-join" onclick="joinGame()">Oyuna Qoşul →</button>
+    <div class="errmsg" id="errmsg"></div>
+  </div>
+</div>
+
+<!-- WAITING -->
+<div id="waiting">
+  <div class="wt-avatar" id="wtav">🦊</div>
+  <div class="wt-name">Salam, <b id="wtname">...</b>!</div>
+  <div class="wt-sub" style="margin-top:16px">Müəllim oyunu başlatmasını gözlə<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+  <div class="wt-sub" style="margin-top:8px;color:rgba(255,255,255,.25)">10 sual · sürətli cavab = daha çox xal</div>
+</div>
+
+<!-- QUESTION -->
+<div id="qscreen">
+  <div class="qhead">
+    <div class="qinfo" id="qinfo">Sual 1/10</div>
+    <div class="qtimer" id="qtimer">15</div>
+  </div>
+  <div class="qquestion" id="qqtext">...</div>
+  <div class="optlist" id="optlist"></div>
+</div>
+
+<!-- ANSWERED -->
+<div id="answered">
+  <div class="ans-avatar" id="ansav">🦊</div>
+  <div class="ans-icon">⏳</div>
+  <div class="ans-title">Cavab göndərildi!</div>
+  <div class="ans-sub" style="margin-top:8px">Nəticəni gözlə<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+</div>
+
+<!-- RESULTS -->
+<div id="results">
+  <div class="res-av" id="resav">🦊</div>
+  <div class="res-icon" id="resicon">🎯</div>
+  <div class="res-title" id="restitle">...</div>
+  <div class="res-correct" id="rescorrect"></div>
+  <div class="pts-card" id="ptscard">
+    <div class="pts-row">
+      <div class="pts-label">BU SUALDAN</div>
+      <div class="pts-val" id="lastpts">+0</div>
+    </div>
+    <div class="pts-row">
+      <div class="pts-label">ÜMUMI XAL</div>
+      <div class="pts-val total" id="totalpts">0</div>
+    </div>
+  </div>
+  <div class="wait-next">Növbəti sual gəlir<span class="dots"><span>.</span><span>.</span><span>.</span></span></div>
+</div>
+
+<!-- FINAL -->
+<div id="final">
+  <div class="fin-av" id="finav">🦊</div>
+  <div class="fin-title" id="fintitle">Təbriklər!</div>
+  <div class="fin-score" id="finscore">0</div>
+  <div class="fin-rank" id="finrank">xal</div>
+  <div class="fin-badge" id="finbadge">🏅 Oyun Bitti</div>
+</div>
+
+</div>
+
+<script>
+const AVATARS=['🦊','🐼','🦁','🐯','🦄','🐸','🦋','🐙','🦀','🐬','🦖','🤖','👾','🎃','🦸','🧙','🧜','🦝','🦩','🎯'];
+const HOST=window.location.host;
+
+let ws,myName='',myAv=0,myAns=-1,myScore=0;
+
+// Build avatar grid
+const grid=document.getElementById('avgrid');
+AVATARS.forEach((av,i)=>{
+  const btn=document.createElement('div');btn.className='av-btn';
+  btn.id='av-'+i;btn.style.animationDelay=`${i*.03}s`;
+  btn.innerHTML=`<span>${av}</span>`;
+  btn.onclick=()=>selectAv(i);
+  grid.appendChild(btn);
+});
+selectAv(0);
+
+function selectAv(i){
+  document.querySelectorAll('.av-btn').forEach(b=>b.classList.remove('selected'));
+  const btn=document.getElementById('av-'+i);
+  if(btn){btn.classList.add('selected');myAv=i;}
+}
+
+function connect(){ws=new WebSocket((location.protocol==="https:"?"wss://":"ws://")+HOST);ws.onmessage=e=>handle(JSON.parse(e.data));ws.onclose=()=>setTimeout(connect,2000);}
+
+function handle(msg){
+  if(msg.type==='joined'){myName=msg.name;myAv=msg.avatar;
+    document.getElementById('wtname').textContent=msg.name;
+    document.getElementById('wtav').textContent=AVATARS[myAv]||'🎓';
+    show('waiting');}
+  else if(msg.type==='join_error')document.getElementById('errmsg').textContent=msg.reason;
+  else if(msg.type==='question'){myAns=-1;showQ(msg);}
+  else if(msg.type==='timer')updateTimer(msg.timeLeft);
+  else if(msg.type==='answer_received')showAnswered();
+  else if(msg.type==='answer_reveal')showResults(msg);
+  else if(msg.type==='game_over')showFinal(msg.scoreboard);
+  else if(msg.type==='reset')location.reload();
+}
+
+function show(id){
+  ['join','waiting','qscreen','answered','results','final'].forEach(s=>document.getElementById(s).style.display=s===id?'flex':'none');
+}
+
+function joinGame(){
+  const name=document.getElementById('nameinp').value.trim();
+  if(!name){document.getElementById('errmsg').textContent='Ad yazın!';return;}
+  ws.send(JSON.stringify({type:'join',name,avatar:myAv}));
+}
+
+function showQ(msg){
+  show('qscreen');
+  document.getElementById('qinfo').textContent=`Sual ${msg.index+1}/${msg.total}`;
+  const t=document.getElementById('qtimer');t.textContent=msg.time;t.className='qtimer';
+  document.getElementById('qqtext').textContent=msg.question;
+  const L=['A','B','C','D'];
+  const ol=document.getElementById('optlist');ol.innerHTML='';
+  msg.options.forEach((o,i)=>{
+    const btn=document.createElement('button');btn.className='obtn';btn.dataset.i=i;
+    btn.innerHTML=`<div class="oltr">${L[i]}</div><span>${o}</span>`;
+    btn.onclick=()=>sendAns(i,btn);
+    ol.appendChild(btn);
+  });
+}
+
+function updateTimer(t){
+  const el=document.getElementById('qtimer');el.textContent=t;
+  el.className='qtimer'+(t<=4?' danger':t<=8?' warn':'');
+}
+
+function sendAns(i,btn){
+  if(myAns!==-1)return;myAns=i;
+  document.querySelectorAll('.obtn').forEach(b=>{b.classList.add('dis');if(parseInt(b.dataset.i)===i)b.classList.add('sel');});
+  ws.send(JSON.stringify({type:'answer',option:i}));
+}
+
+function showAnswered(){
+  show('answered');
+  document.getElementById('ansav').textContent=AVATARS[myAv]||'🎓';
+}
+
+function showResults(msg){
+  show('results');
+  document.getElementById('resav').textContent=AVATARS[myAv]||'🎓';
+  const pr=msg.playerResults&&msg.playerResults[myName];
+  const correct=pr?pr.lastCorrect:null;
+  const noAns=myAns===-1;
+  document.getElementById('resicon').textContent=noAns?'⏰':correct?'🎉':'😔';
+  const title=document.getElementById('restitle');
+  title.textContent=noAns?'Vaxt bitti!':correct?'Düzgün!':'Səhv!';
+  title.className='res-title '+(correct?'ok':'no');
+  const correctText=msg.options?msg.options[msg.correct]:'';
+  document.getElementById('rescorrect').textContent=correct?'':'Düzgün cavab: '+correctText;
+  if(pr){
+    myScore=pr.total||0;
+    const lp=pr.lastPts||0;
+    const lel=document.getElementById('lastpts');
+    lel.textContent=lp>0?'+'+lp:lp;
+    lel.className='pts-val '+(lp>0?'plus':'minus');
+    document.getElementById('totalpts').textContent=myScore;
+  }
+}
+
+function showFinal(sb){
+  show('final');
+  document.getElementById('finav').textContent=AVATARS[myAv]||'🎓';
+  const me=sb.find(p=>p.name===myName);
+  const rank=sb.findIndex(p=>p.name===myName)+1;
+  const trophies=['🥇','🥈','🥉'];
+  const titles=['Birinci oldun!','İkinci oldun!','Üçüncü oldun!'];
+  document.getElementById('fintitle').textContent=rank<=3?titles[rank-1]:'Oyun Bitti!';
+  document.getElementById('finscore').textContent=me?me.score:0;
+  document.getElementById('finrank').textContent=`${rank}. yer`;
+  const badge=document.getElementById('finbadge');
+  badge.textContent=rank<=3?(trophies[rank-1]+' '+['Qızıl medal','Gümüş medal','Bürünc medal'][rank-1]):'🎓 Qatıldın!';
+}
+
+document.getElementById('nameinp').addEventListener('keypress',e=>{if(e.key==='Enter')joinGame();});
+
+connect();
+show('join');
+</script>
+</body>
+</html>

@@ -1,0 +1,12 @@
+{
+  "name": "quiz-dərs",
+  "version": "1.0.0",
+  "description": "Kahoot-style quiz game",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.0.0"
+  }
+}
