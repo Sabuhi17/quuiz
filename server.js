@@ -156,7 +156,18 @@ wss.on('connection',(ws,req)=>{
     }
   });
   ws.on('close',()=>{
-    if(ws.playerName){delete gameState.players[ws.playerName];sendToHost({type:'player_left',name:ws.playerName,count:Object.keys(gameState.players).length});}
+    // If host disconnects, reset everything so students can rejoin
+    if(ws.role==='host'){
+      clearInterval(gameState.questionTimer);
+      gameState={phase:'lobby',currentQuestion:-1,players:{},answers:{},scores:{},questionTimer:null,timeLeft:15,questions:[]};
+      hostWs=null;
+      broadcast({type:'reset'});
+    }
+    // If student disconnects
+    if(ws.playerName){
+      delete gameState.players[ws.playerName];
+      sendToHost({type:'player_left',name:ws.playerName,count:Object.keys(gameState.players).length});
+    }
   });
 });
 
